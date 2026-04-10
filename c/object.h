@@ -124,6 +124,7 @@ struct ObjString {
   Obj obj;
   int length;
   char* chars;
+  bool ownsChars;
 //> Hash Tables obj-string-hash
   uint32_t hash;
 //< Hash Tables obj-string-hash
@@ -200,6 +201,7 @@ ObjNative* newNative(NativeFn function);
 //> take-string-h
 ObjString* takeString(char* chars, int length);
 //< take-string-h
+ObjString* constantString(const char* chars, int length);
 //> copy-string-h
 ObjString* copyString(const char* chars, int length);
 //> Closures new-upvalue-h

@@ -109,15 +109,18 @@ static ObjString* allocateString(char* chars, int length) {
 */
 //> allocate-string
 //> Hash Tables allocate-string
-static ObjString* allocateString(char* chars, int length,
-                                 uint32_t hash) {
-//< Hash Tables allocate-string
-  ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
+static ObjString* allocateStringFlex(const char* source, int length,
+                                     uint32_t hash) {
+  ObjString* string = (ObjString*)allocateObject(
+      sizeof(ObjString) + length + 1, OBJ_STRING);
   string->length = length;
-  string->chars = chars;
+  string->chars = (char*)string + sizeof(ObjString);
+  string->ownsChars = false;
 //> Hash Tables allocate-store-hash
   string->hash = hash;
 //< Hash Tables allocate-store-hash
+  memcpy(string->chars, source, length);
+  string->chars[length] = '\0';
 //> Hash Tables allocate-store-string
 //> Garbage Collection push-string
 
@@ -158,10 +161,28 @@ ObjString* takeString(char* chars, int length) {
   }
 
 //< take-string-intern
-  return allocateString(chars, length, hash);
+  ObjString* string = allocateStringFlex(chars, length, hash);
+  FREE_ARRAY(char, chars, length + 1);
+  return string;
 //< Hash Tables take-string-hash
 }
 //< take-string
+ObjString* constantString(const char* chars, int length) {
+  uint32_t hash = hashString(chars, length);
+  ObjString* interned = tableFindString(&vm.strings, chars, length,
+                                        hash);
+  if (interned != NULL) return interned;
+
+  ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
+  string->length = length;
+  string->chars = (char*)chars;
+  string->ownsChars = false;
+  string->hash = hash;
+  push(OBJ_VAL(string));
+  tableSet(&vm.strings, string, NIL_VAL);
+  pop();
+  return string;
+}
 ObjString* copyString(const char* chars, int length) {
 //> Hash Tables copy-string-hash
   uint32_t hash = hashString(chars, length);
@@ -172,14 +193,11 @@ ObjString* copyString(const char* chars, int length) {
 
 //< copy-string-intern
 //< Hash Tables copy-string-hash
-  char* heapChars = ALLOCATE(char, length + 1);
-  memcpy(heapChars, chars, length);
-  heapChars[length] = '\0';
 /* Strings object-c < Hash Tables copy-string-allocate
   return allocateString(heapChars, length);
 */
 //> Hash Tables copy-string-allocate
-  return allocateString(heapChars, length, hash);
+  return allocateStringFlex(chars, length, hash);
 //< Hash Tables copy-string-allocate
 }
 //> Closures new-upvalue

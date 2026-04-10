@@ -707,8 +707,8 @@ static void string() {
 //> Global Variables string
 static void string(bool canAssign) {
 //< Global Variables string
-  emitConstant(OBJ_VAL(copyString(parser.previous.start + 1,
-                                  parser.previous.length - 2)));
+  emitConstant(OBJ_VAL(constantString(parser.previous.start + 1,
+                                      parser.previous.length - 2)));
 }
 //< Strings parse-string
 /* Global Variables read-named-variable < Global Variables named-variable-signature
